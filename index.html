@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🔥 Real-Time Chat Room</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+        }
+        .nickname {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .timestamp {
+            color: #888;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+        #inputArea {
+            display: flex;
+            padding: 10px;
+            background: #1e1e1e;
+        }
+        input, button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        #messageInput {
+            flex: 1;
+            margin-right: 10px;
+        }
+        #nicknameArea {
+            padding: 10px;
+            background: #1e1e1e;
+            display: flex;
+        }
+        #nicknameInput {
+            flex: 1;
+        }
+        @media screen and (max-width: 600px) {
+            #inputArea, #nicknameArea {
+                flex-direction: column;
+            }
+            #messageInput, #nicknameInput {
+                margin-bottom: 10px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h2 style="text-align:center; margin:10px 0;">🌙 Real-Time Chat Room</h2>
+
+    <div id="nicknameArea">
+        <input type="text" id="nicknameInput" placeholder="Enter your nickname...">
+        <button id="setNicknameBtn">Set Nickname</button>
+    </div>
+
+    <div id="chat"></div>
+
+    <div id="inputArea">
+        <input type="text" id="messageInput" placeholder="Type your message...">
+        <button id="sendBtn">Send</button>
+    </div>
+
+    <script>
+        const socket = new WebSocket('ws://localhost:8080');
+
+        const chat = document.getElementById('chat');
+        const nicknameInput = document.getElementById('nicknameInput');
+        const setNicknameBtn = document.getElementById('setNicknameBtn');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        let nickname = "Anonymous";
+
+        setNicknameBtn.onclick = () => {
+            if (nicknameInput.value.trim() !== "") {
+                nickname = nicknameInput.value.trim();
+                socket.send(JSON.stringify({ type: 'set_nickname', nickname: nickname }));
+                nicknameInput.disabled = true;
+                setNicknameBtn.disabled = true;
+            }
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'chat_message') {
+                const div = document.createElement('div');
+                div.classList.add('message');
+                div.innerHTML = `<span class="nickname">${data.nickname}</span>: ${data.message} <span class="timestamp">[${data.timestamp}]</span>`;
+                chat.appendChild(div);
+                chat.scrollTop = chat.scrollHeight;
+            }
+        };
+
+        sendBtn.onclick = () => {
+            const message = messageInput.value.trim();
+            if (message !== "") {
+                socket.send(JSON.stringify({ type: 'chat_message', message: message }));
+                messageInput.value = "";
+            }
+        };
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+    </script>
+
+</body>
+</html>
